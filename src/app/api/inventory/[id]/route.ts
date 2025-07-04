@@ -169,6 +169,7 @@ export async function PUT(
 
     return NextResponse.json(updatedItem);
   } catch (error) {
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     return NextResponse.json(
       { error: 'Failed to update inventory item' },
       { status: 400 }
