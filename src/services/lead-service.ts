@@ -185,7 +185,7 @@ export const LeadService = {
         try {
           const errorData = await response.json();
           throw new Error(errorData.message || 'Failed to create lead');
-        } catch (jsonError) {
+        } catch (error) {
           // If the response is not valid JSON
           throw new Error(`Failed to create lead: ${response.statusText}`);
         }
@@ -210,6 +210,7 @@ export const LeadService = {
       if (!token) throw new Error('Not authenticated');
 
       // Prepare the data according to backend schema
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const backendLeadData: any = {};
       
       if (leadData.name) backendLeadData.name = leadData.name;

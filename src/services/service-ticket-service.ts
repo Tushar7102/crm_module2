@@ -126,6 +126,8 @@ export interface JobFilters {
   };
   searchTerm?: string;
 }
+
+export interface JobLog {
   createdAt: string;
 }
 
