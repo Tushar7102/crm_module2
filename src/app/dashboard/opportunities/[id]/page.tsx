@@ -8,7 +8,7 @@ import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Separator } from '@/components/ui/separator';
 import { toast } from 'sonner';
-import { ArrowLeft, Calendar, DollarSign, Edit, Trash2, User } from 'lucide-react';
+import { ArrowLeft, Calendar, CheckSquare, DollarSign, Download, Edit, File, Presentation, FileSpreadsheet, FileText, Image, Mail, MessageSquare, Phone, Trash2, Upload, User } from 'lucide-react';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -22,18 +22,25 @@ import {
 } from '@/components/ui/alert-dialog';
 
 interface Opportunity {
-  id: string;
-  name: string;
+  _id: string;
+  title: string;
   value: number;
   stage: string;
-  expectedCloseDate: string; // Changed from closeDate to match API
+  expectedCloseDate: string;
   probability: number;
-  leadSource?: string; // Made optional as it might not be in API
-  assignedTo?: string | { name: string }; // Can be string or object with name
-  clientName: string; // Changed from customerName to match API
-  description?: string; // Changed from notes to match API
+  leadSource?: string;
+  assignedTo?: { _id: string; name: string; email: string };
+  leadId?: { _id: string; name: string; phone: string; email: string };
+  customer: { name: string; phone: string; email: string };
+  notes?: string;
   createdAt: string;
   updatedAt?: string;
+  activities?: Array<any>;
+  competitors?: Array<any>;
+  documents?: Array<any>;
+  products?: Array<{ name: string; quantity: number; unitPrice: number; totalPrice: number; description?: string }>;
+  quotes?: Array<any>;
+  createdBy?: string;
 }
 
 export default function OpportunityDetailsPage() {
@@ -196,15 +203,15 @@ export default function OpportunityDetailsPage() {
           >
             <ArrowLeft className="h-4 w-4" />
           </Button>
-          <h2 className="text-3xl font-bold tracking-tight">{opportunity.name}</h2>
-          <Badge className={getStageColor(opportunity.stage)}>
+          <h2 className="text-3xl font-bold tracking-tight">{opportunity.title}</h2>
+          <Badge className={`${getStageColor(opportunity.stage)} animate-pulse`}>
             {formatStage(opportunity.stage)}
           </Badge>
         </div>
         <div className="flex space-x-2">
           <Button 
             variant="outline" 
-            onClick={() => router.push(`/dashboard/opportunities/${opportunity.id}/edit`)}
+            onClick={() => router.push(`/dashboard/opportunities/${opportunity._id}/edit`)}
           >
             <Edit className="mr-2 h-4 w-4" /> Edit
           </Button>
@@ -232,89 +239,144 @@ export default function OpportunityDetailsPage() {
       </div>
 
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-        <Card>
+        <Card className="hover:shadow-lg transition-all duration-300 hover:border-primary">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Value</CardTitle>
             <DollarSign className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{formatCurrency(opportunity.value)}</div>
+            <div className="text-2xl font-bold animate-in fade-in-50 duration-500">{formatCurrency(opportunity.value)}</div>
           </CardContent>
         </Card>
-        <Card>
+        <Card className="hover:shadow-lg transition-all duration-300 hover:border-primary">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Probability</CardTitle>
             <div className="h-4 w-4 text-muted-foreground">%</div>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{opportunity.probability}%</div>
+            <div className="text-2xl font-bold animate-in fade-in-50 duration-500 delay-100">{opportunity.probability}%</div>
+            <div className="h-2 w-full bg-gray-200 rounded-full mt-2">
+              <div 
+                className="h-2 bg-primary rounded-full transition-all duration-1000" 
+                style={{ width: `${opportunity.probability}%` }}
+              ></div>
+            </div>
           </CardContent>
         </Card>
-        <Card>
+        <Card className="hover:shadow-lg transition-all duration-300 hover:border-primary">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Expected Close</CardTitle>
             <Calendar className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{new Date(opportunity.expectedCloseDate).toLocaleDateString()}</div>
+            <div className="text-2xl font-bold animate-in fade-in-50 duration-500 delay-200">{new Date(opportunity.expectedCloseDate).toLocaleDateString()}</div>
           </CardContent>
         </Card>
-        <Card>
+        <Card className="hover:shadow-lg transition-all duration-300 hover:border-primary">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Assigned To</CardTitle>
             <User className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{typeof opportunity.assignedTo === 'object' && opportunity.assignedTo ? opportunity.assignedTo.name || 'Unassigned' : opportunity.assignedTo || 'Unassigned'}</div>
+            <div className="text-2xl font-bold animate-in fade-in-50 duration-500 delay-300">{typeof opportunity.assignedTo === 'object' && opportunity.assignedTo ? opportunity.assignedTo.name || 'Unassigned' : opportunity.assignedTo || 'Unassigned'}</div>
           </CardContent>
         </Card>
       </div>
 
       <Tabs defaultValue="details" className="w-full">
-        <TabsList>
-          <TabsTrigger value="details">Details</TabsTrigger>
-          <TabsTrigger value="activity">Activity</TabsTrigger>
-          <TabsTrigger value="documents">Documents</TabsTrigger>
+        <TabsList className="grid w-full grid-cols-3">
+          <TabsTrigger value="details" className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground transition-all duration-300">Details</TabsTrigger>
+          <TabsTrigger value="activity" className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground transition-all duration-300">Activity</TabsTrigger>
+          <TabsTrigger value="documents" className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground transition-all duration-300">Documents</TabsTrigger>
         </TabsList>
-        <TabsContent value="details" className="space-y-4">
-          <Card>
+        <TabsContent value="details" className="space-y-4 animate-in slide-in-from-left-5 duration-500">
+          <Card className="hover:shadow-lg transition-all duration-300">
             <CardHeader>
-              <CardTitle>Opportunity Details</CardTitle>
+              <CardTitle className="flex items-center"><span className="mr-2 text-primary">📋</span> Opportunity Details</CardTitle>
               <CardDescription>
                 View and manage the details of this opportunity.
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <h3 className="text-sm font-medium">Customer</h3>
-                  <p>{opportunity.clientName || 'No customer assigned'}</p>
+                <div className="p-3 rounded-lg bg-secondary/20 hover:bg-secondary/30 transition-all duration-300">
+                  <h3 className="text-sm font-medium text-primary">Customer</h3>
+                  <p className="font-semibold">{opportunity.customer?.name || 'No customer assigned'}</p>
                 </div>
-                <div>
-                  <h3 className="text-sm font-medium">Lead Source</h3>
-                  <p>{opportunity.leadSource || 'Unknown'}</p>
+                <div className="p-3 rounded-lg bg-secondary/20 hover:bg-secondary/30 transition-all duration-300">
+                  <h3 className="text-sm font-medium text-primary">Customer Email</h3>
+                  <p className="font-semibold">{opportunity.customer?.email || 'No email available'}</p>
+                </div>
+                <div className="p-3 rounded-lg bg-secondary/20 hover:bg-secondary/30 transition-all duration-300">
+                  <h3 className="text-sm font-medium text-primary">Customer Phone</h3>
+                  <p className="font-semibold">{opportunity.customer?.phone || 'No phone available'}</p>
+                </div>
+                <div className="p-3 rounded-lg bg-secondary/20 hover:bg-secondary/30 transition-all duration-300">
+                  <h3 className="text-sm font-medium text-primary">Lead Source</h3>
+                  <p className="font-semibold">{opportunity.leadId ? `Lead #${opportunity.leadId._id}` : 'No lead associated'}</p>
                 </div>
               </div>
               
-              <Separator />
+              <Separator className="bg-primary/20" />
               
-              <div>
-                <h3 className="text-sm font-medium">Notes</h3>
-                <p className="mt-1">{opportunity.description || 'No notes available'}</p>
+              <div className="p-3 rounded-lg bg-secondary/10 hover:bg-secondary/20 transition-all duration-300">
+                <h3 className="text-sm font-medium text-primary">Notes</h3>
+                <p className="mt-1 whitespace-pre-line">{opportunity.notes || 'No notes available'}</p>
               </div>
               
-              <Separator />
+              <Separator className="bg-primary/20" />
+              
+              <div className="p-3 rounded-lg bg-secondary/10 hover:bg-secondary/20 transition-all duration-300">
+                <h3 className="text-sm font-medium text-primary mb-2">Products</h3>
+                {opportunity.products && opportunity.products.length > 0 ? (
+                  <div className="space-y-2 mt-2">
+                    {opportunity.products.map((product, index) => (
+                      <div key={index} className="p-2 border rounded-md">
+                        <p className="font-medium">{product.name}</p>
+                        <div className="flex justify-between text-sm">
+                          <span>Quantity: {product.quantity}</span>
+                          <span>Price: {formatCurrency(product.unitPrice || product.price)}</span>
+                        </div>
+                        {product.description && <p className="text-xs text-muted-foreground mt-1">{product.description}</p>}
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="text-muted-foreground">No products added</p>
+                )}
+              </div>
+              
+              <Separator className="bg-primary/20" />
+              
+              <div className="p-3 rounded-lg bg-secondary/10 hover:bg-secondary/20 transition-all duration-300">
+                <h3 className="text-sm font-medium text-primary mb-2">Competitors</h3>
+                {opportunity.competitors && opportunity.competitors.length > 0 ? (
+                  <div className="space-y-2 mt-2">
+                    {opportunity.competitors.map((competitor, index) => (
+                      <div key={index} className="p-2 border rounded-md">
+                        <p className="font-medium">{competitor.name}</p>
+                        <p className="text-sm text-muted-foreground">{competitor.strengths}</p>
+                        <p className="text-sm text-muted-foreground">{competitor.weaknesses}</p>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="text-muted-foreground">No competitors identified</p>
+                )}
+              </div>
+              
+              <Separator className="bg-primary/20" />
               
               <div>
-                <h3 className="text-sm font-medium">Stage</h3>
+                <h3 className="text-sm font-medium text-primary mb-2">Stage</h3>
                 <div className="mt-2 flex flex-wrap gap-2">
-                  {['prospecting', 'qualification', 'proposal', 'negotiation', 'closed_won', 'closed_lost'].map((stage) => (
+                  {['prospecting', 'qualification', 'proposal', 'negotiation', 'closed_won', 'closed_lost'].map((stage, index) => (
                     <Button 
                       key={stage} 
                       variant={opportunity.stage === stage ? 'default' : 'outline'}
                       size="sm"
                       onClick={() => handleStageChange(stage)}
-                      className={opportunity.stage === stage ? '' : 'hover:bg-secondary'}
+                      className={`${opportunity.stage === stage ? 'animate-pulse shadow-md' : 'hover:bg-secondary'} transition-all duration-300 animate-in fade-in-50 delay-${index * 100}`}
                     >
                       {formatStage(stage)}
                     </Button>
@@ -324,32 +386,118 @@ export default function OpportunityDetailsPage() {
             </CardContent>
           </Card>
         </TabsContent>
-        <TabsContent value="activity" className="space-y-4">
-          <Card>
+        <TabsContent value="activity" className="space-y-4 animate-in slide-in-from-right-5 duration-500">
+          <Card className="hover:shadow-lg transition-all duration-300">
             <CardHeader>
-              <CardTitle>Activity Timeline</CardTitle>
+              <CardTitle className="flex items-center"><span className="mr-2 text-primary">📅</span> Activity Timeline</CardTitle>
               <CardDescription>
                 Recent activity for this opportunity.
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="text-center py-8 text-muted-foreground">
-                Activity timeline will be implemented in a future update.
+              <div className="space-y-4">
+                <div className="flex items-start space-x-4 p-3 rounded-lg bg-secondary/10 hover:bg-secondary/20 transition-all duration-300 animate-in fade-in-50 duration-500">
+                  <div className="bg-primary text-primary-foreground rounded-full p-2">
+                    <User className="h-4 w-4" />
+                  </div>
+                  <div>
+                    <p className="font-medium">Opportunity Created</p>
+                    <p className="text-sm text-muted-foreground">{new Date(opportunity.createdAt).toLocaleString()}</p>
+                  </div>
+                </div>
+                <div className="flex items-start space-x-4 p-3 rounded-lg bg-secondary/10 hover:bg-secondary/20 transition-all duration-300 animate-in fade-in-50 duration-500 delay-100">
+                  <div className="bg-primary text-primary-foreground rounded-full p-2">
+                    <Edit className="h-4 w-4" />
+                  </div>
+                  <div>
+                    <p className="font-medium">Stage Updated to {formatStage(opportunity.stage)}</p>
+                    <p className="text-sm text-muted-foreground">{new Date(opportunity.updatedAt).toLocaleString()}</p>
+                  </div>
+                </div>
+                
+                {opportunity.activities && opportunity.activities.length > 0 ? (
+                  opportunity.activities.map((activity, index) => (
+                    <div key={index} className="flex items-start space-x-4 p-3 rounded-lg bg-secondary/10 hover:bg-secondary/20 transition-all duration-300 animate-in fade-in-50 duration-500" style={{ animationDelay: `${(index + 2) * 100}ms` }}>
+                      <div className="bg-primary text-primary-foreground rounded-full p-2">
+                        {activity.type === 'call' ? <Phone className="h-4 w-4" /> : 
+                         activity.type === 'email' ? <Mail className="h-4 w-4" /> : 
+                         activity.type === 'meeting' ? <Calendar className="h-4 w-4" /> : 
+                         activity.type === 'task' ? <CheckSquare className="h-4 w-4" /> : 
+                         <MessageSquare className="h-4 w-4" />}
+                      </div>
+                      <div>
+                        <p className="font-medium">{activity.title || activity.type}</p>
+                        <p className="text-sm">{activity.description}</p>
+                        {activity.date && <p className="text-sm text-muted-foreground">{new Date(activity.date).toLocaleString()}</p>}
+                      </div>
+                    </div>
+                  ))
+                ) : (
+                  <div className="text-center py-4 text-muted-foreground animate-in fade-in-50 duration-500 delay-200">
+                    No additional activities recorded yet.
+                  </div>
+                )}
               </div>
             </CardContent>
           </Card>
         </TabsContent>
-        <TabsContent value="documents" className="space-y-4">
-          <Card>
+        <TabsContent value="documents" className="space-y-4 animate-in slide-in-from-right-5 duration-500">
+          <Card className="hover:shadow-lg transition-all duration-300">
             <CardHeader>
-              <CardTitle>Documents</CardTitle>
+              <CardTitle className="flex items-center"><span className="mr-2 text-primary">📄</span> Documents</CardTitle>
               <CardDescription>
                 Manage documents related to this opportunity.
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="text-center py-8 text-muted-foreground">
-                Document management will be implemented in a future update.
+              <div className="space-y-4">
+                <div className="flex justify-between items-center p-3 rounded-lg border border-dashed border-primary/50 hover:border-primary transition-all duration-300 animate-in fade-in-50 duration-500">
+                  <div className="flex items-center space-x-2">
+                    <FileText className="h-5 w-5 text-primary" />
+                    <span className="font-medium">Upload Documents</span>
+                  </div>
+                  <Button size="sm" variant="outline" className="animate-pulse">
+                    <Upload className="h-4 w-4 mr-2" /> Upload
+                  </Button>
+                </div>
+                
+                {opportunity.documents && opportunity.documents.length > 0 ? (
+                  <div className="space-y-3">
+                    {opportunity.documents.map((document, index) => (
+                      <div key={index} className="flex justify-between items-center p-3 rounded-lg bg-secondary/10 hover:bg-secondary/20 transition-all duration-300 animate-in fade-in-50 duration-500" style={{ animationDelay: `${index * 100}ms` }}>
+                        <div className="flex items-center space-x-3">
+                          <div className="bg-primary/10 p-2 rounded">
+                            {document.fileType?.includes('pdf') ? <FileText className="h-5 w-5 text-primary" /> :
+                             document.fileType?.includes('doc') ? <FileText className="h-5 w-5 text-primary" /> :
+                             document.fileType?.includes('xls') ? <FileSpreadsheet className="h-5 w-5 text-primary" /> :
+                             document.fileType?.includes('ppt') ? <Presentation className="h-5 w-5 text-primary" /> :
+                             document.fileType?.includes('image') ? <Image className="h-5 w-5 text-primary" /> :
+                             <File className="h-5 w-5 text-primary" />}
+                          </div>
+                          <div>
+                            <p className="font-medium">{document.name || document.fileName || 'Document'}</p>
+                            <p className="text-xs text-muted-foreground">
+                              {document.fileSize ? `${Math.round(document.fileSize / 1024)} KB` : ''}
+                              {document.uploadDate ? ` • Uploaded ${new Date(document.uploadDate).toLocaleDateString()}` : ''}
+                            </p>
+                          </div>
+                        </div>
+                        <div className="flex space-x-2">
+                          <Button size="sm" variant="ghost">
+                            <Download className="h-4 w-4" />
+                          </Button>
+                          <Button size="sm" variant="ghost" className="text-destructive hover:text-destructive">
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="text-center py-4 text-muted-foreground animate-in fade-in-50 duration-500 delay-100">
+                    No documents uploaded yet.
+                  </div>
+                )}
               </div>
             </CardContent>
           </Card>

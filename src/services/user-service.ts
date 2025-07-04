@@ -353,7 +353,6 @@ export const UserService = {
   /**
    * Get user activity logs
    */
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   getUserActivityLogs: async (userId: string): Promise<any[]> => {
     try {
       const token = AuthService.getToken();

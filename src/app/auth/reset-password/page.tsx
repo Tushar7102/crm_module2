@@ -11,7 +11,7 @@ import { Input } from '@/components/ui/input';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { toast } from 'sonner';
-// import { AuthService } from '@/services/auth-service';
+import { AuthService } from '@/services/auth-service';
 
 const formSchema = z.object({
   password: z.string().min(6, { message: 'Password must be at least 6 characters' }),
@@ -38,7 +38,7 @@ export default function ResetPasswordPage() {
     },
   });
 
-  const onSubmit = async (_data: FormValues) => {
+  const onSubmit = async (data: FormValues) => {
     if (!token) {
       toast.error('Invalid or missing reset token');
       return;

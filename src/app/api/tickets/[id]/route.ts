@@ -127,7 +127,7 @@ export async function PUT(
     };
 
     return NextResponse.json(updatedTicket);
-  } catch (_error) {
+  } catch (error) {
     return NextResponse.json(
       { error: 'Failed to update service ticket' },
       { status: 400 }

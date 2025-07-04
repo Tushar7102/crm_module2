@@ -1,5 +1,6 @@
 import { toast } from 'sonner';
 import AuthService from './auth-service';
+import { API_URL, API_ENDPOINTS, getAuthHeaders } from '@/lib/api-config';
 
 // Types for leads
 export interface Lead {
@@ -54,7 +55,7 @@ export interface LeadsResponse {
   };
 }
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api';
+// API URL is now imported from api-config.ts
 
 /**
  * Service for handling lead-related API calls
@@ -86,14 +87,11 @@ export const LeadService = {
       }
   
       // Always use the real backend API
-      const apiUrl = `${API_URL}/leads${queryString}`;
+      const apiUrl = `${API_ENDPOINTS.LEADS.BASE}${queryString}`;
   
       const response = await fetch(apiUrl, {
         method: 'GET',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
-        },
+        headers: getAuthHeaders(token),
       });
   
       if (!response.ok) {
@@ -128,12 +126,9 @@ export const LeadService = {
       const token = AuthService.getToken();
       if (!token) throw new Error('Not authenticated');
 
-      const response = await fetch(`${API_URL}/leads/${id}`, {
+      const response = await fetch(API_ENDPOINTS.LEADS.DETAIL(id), {
         method: 'GET',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
-        },
+        headers: getAuthHeaders(token),
       });
 
       if (!response.ok) {
@@ -185,7 +180,7 @@ export const LeadService = {
         try {
           const errorData = await response.json();
           throw new Error(errorData.message || 'Failed to create lead');
-        } catch (error) {
+        } catch (jsonError) {
           // If the response is not valid JSON
           throw new Error(`Failed to create lead: ${response.statusText}`);
         }
@@ -210,7 +205,6 @@ export const LeadService = {
       if (!token) throw new Error('Not authenticated');
 
       // Prepare the data according to backend schema
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const backendLeadData: any = {};
       
       if (leadData.name) backendLeadData.name = leadData.name;

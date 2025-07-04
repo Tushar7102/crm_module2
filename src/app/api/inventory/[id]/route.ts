@@ -168,7 +168,7 @@ export async function PUT(
     };
 
     return NextResponse.json(updatedItem);
-  } catch (_error) {
+  } catch (error) {
     return NextResponse.json(
       { error: 'Failed to update inventory item' },
       { status: 400 }

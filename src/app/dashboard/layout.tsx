@@ -229,7 +229,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
               <div className="flex items-center p-3 bg-muted/30 border border-border/50 rounded-lg shadow-sm transition-all hover:bg-primary/5">
                 <Avatar className="border-2 border-primary/20 shadow-sm">
                   <AvatarImage
-                    src={user?.avatar || '/avatar-placeholder.png'}
+                    src={user?.avatar || '/avatar-placeholder.svg'}
                     alt={user?.name || 'User'}
                   />
                   <AvatarFallback className="bg-primary/10 text-primary">
@@ -309,7 +309,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
               </Button>
             </div>
             <Avatar className="h-8 w-8 border-2 border-border/50 shadow-sm">
-              <AvatarImage src="/avatar-placeholder.png" alt="User" />
+              <AvatarImage src="/avatar-placeholder.svg" alt="User" />
               <AvatarFallback className="bg-primary/10 text-primary">U</AvatarFallback>
             </Avatar>
           </div>

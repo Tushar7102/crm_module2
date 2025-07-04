@@ -16,17 +16,53 @@ export interface CallRecord {
 }
 
 export interface Campaign {
-  id: string;
+  id?: string;
   name: string;
   description?: string;
-  startDate: string;
+  type: string;
+  startDate?: string;
   endDate?: string;
   status: string;
   targetAudience?: string;
-  script?: string;
-  assignedAgents?: string[];
-  createdBy: string;
-  createdAt: string;
+  targetRegions?: string[];
+  goals?: string;
+  expectedOutcomes?: string;
+  budget?: number;
+  actualCost?: number;
+  leads?: string[];
+  callScripts?: {
+    title: string;
+    content: string;
+    version: number;
+    isActive: boolean;
+  }[];
+  templates?: string[];
+  assignedTelecallers?: {
+    user: string;
+    status: 'assigned' | 'active' | 'completed';
+    leadsAssigned?: number;
+    leadsContacted?: number;
+    leadsConverted?: number;
+  }[];
+  metrics?: {
+    totalLeads?: number;
+    leadsContacted?: number;
+    leadsConverted?: number;
+    conversionRate?: number;
+    totalCalls?: number;
+    avgCallDuration?: number;
+    successfulCalls?: number;
+  };
+  notes?: string;
+  attachments?: {
+    name: string;
+    fileUrl: string;
+    fileType: string;
+    uploadedAt: string;
+  }[];
+  createdBy?: string;
+  manager?: string;
+  createdAt?: string;
   updatedAt?: string;
 }
 
@@ -271,6 +307,65 @@ export const TelecallerService = {
     } catch (error) {
       toast.error(error instanceof Error ? error.message : 'Failed to create campaign');
       return null;
+    }
+  },
+
+  /**
+   * Update an existing campaign
+   */
+  updateCampaign: async (id: string, data: Partial<Campaign>): Promise<Campaign | null> => {
+    try {
+      const token = AuthService.getToken();
+      if (!token) throw new Error('Not authenticated');
+
+      const response = await fetch(`${API_URL}/campaigns/${id}`, {
+        method: 'PUT',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(data),
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.message || 'Failed to update campaign');
+      }
+
+      toast.success('Campaign updated successfully');
+      return await response.json();
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : 'Failed to update campaign');
+      return null;
+    }
+  },
+
+  /**
+   * Delete a campaign
+   */
+  deleteCampaign: async (id: string): Promise<boolean> => {
+    try {
+      const token = AuthService.getToken();
+      if (!token) throw new Error('Not authenticated');
+
+      const response = await fetch(`${API_URL}/campaigns/${id}`, {
+        method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.message || 'Failed to delete campaign');
+      }
+
+      toast.success('Campaign deleted successfully');
+      return true;
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : 'Failed to delete campaign');
+      return false;
     }
   },
 

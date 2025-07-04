@@ -40,6 +40,10 @@ export interface DocumentFormData {
   metadata?: Record<string, any>;
   tags?: string[];
   expiresAt?: string;
+  relatedTo?: {
+    entityType: string;
+    entityId: string;
+  };
 }
 
 export interface DocumentFilters {
@@ -139,6 +143,17 @@ export const DocumentService = {
       const token = AuthService.getToken();
       if (!token) throw new Error('Not authenticated');
 
+      console.log('Uploading document with data:', {
+        name: data.name,
+        type: data.type,
+        category: data.category,
+        fileSize: data.file.size,
+        fileName: data.file.name,
+        fileType: data.file.type,
+        tags: data.tags,
+        relatedTo: data.relatedTo
+      });
+
       const formData = new FormData();
       formData.append('name', data.name);
       formData.append('type', data.type);
@@ -156,22 +171,49 @@ export const DocumentService = {
       if (data.expiresAt) {
         formData.append('expiresAt', data.expiresAt);
       }
-
-      const response = await fetch(`${API_URL}/documents`, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-        },
-        body: formData,
-      });
-
-      if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.message || 'Failed to upload document');
+      
+      // Always include relatedTo, even if it's the default values
+      const relatedTo = data.relatedTo || { entityType: 'Customer', entityId: '' };
+      console.log('Sending relatedTo:', relatedTo);
+      formData.append('relatedTo', JSON.stringify(relatedTo));
+      
+      // Log all form data for debugging
+      console.log('Form data being sent:');
+      for (const pair of formData.entries()) {
+        if (pair[0] === 'file') {
+          console.log('file:', (pair[1] as File).name, (pair[1] as File).type, (pair[1] as File).size + ' bytes');
+        } else {
+          console.log(pair[0], pair[1]);
+        }
       }
 
-      toast.success('Document uploaded successfully');
-      return await response.json();
+      console.log('Sending request to:', `${API_URL}/documents`);
+      console.log('Request headers:', { 'Authorization': 'Bearer [REDACTED]' });
+      
+      try {
+        const response = await fetch(`${API_URL}/documents`, {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${token}`,
+          },
+          body: formData,
+        });
+        
+        console.log('Response status:', response.status);
+        console.log('Response headers:', Object.fromEntries(response.headers.entries()));
+
+        if (!response.ok) {
+          const errorData = await response.json();
+          console.error('Upload error response:', errorData);
+          throw new Error(errorData.message || errorData.msg || errorData.error || 'Failed to upload document');
+        }
+
+        toast.success('Document uploaded successfully');
+        return await response.json();
+      } catch (fetchError) {
+        console.error('Fetch error:', fetchError);
+        throw new Error(fetchError instanceof Error ? fetchError.message : 'Network error during upload');
+      }
     } catch (error) {
       toast.error(error instanceof Error ? error.message : 'Failed to upload document');
       return null;

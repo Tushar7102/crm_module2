@@ -1,4 +1,5 @@
 import { toast } from 'sonner';
+import { API_URL, API_ENDPOINTS, getAuthHeaders } from '@/lib/api-config';
 
 // Types for authentication
 export interface User {
@@ -29,7 +30,7 @@ export interface AuthResponse {
   token: string;
 }
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api';
+// API URL is now imported from api-config.ts
 
 /**
  * Service for handling authentication related API calls
@@ -40,7 +41,7 @@ export const AuthService = {
    */
   login: async (credentials: LoginCredentials): Promise<AuthResponse> => {
     try {
-      const response = await fetch(`${API_URL}/auth/login`, {
+      const response = await fetch(API_ENDPOINTS.AUTH.LOGIN, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -76,7 +77,7 @@ export const AuthService = {
   register: async (userData: RegisterData): Promise<AuthResponse> => {
     try {
       console.log('Sending registration data:', userData);
-      const response = await fetch(`${API_URL}/auth/register`, {
+      const response = await fetch(API_ENDPOINTS.AUTH.REGISTER, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -147,12 +148,9 @@ export const AuthService = {
       const token = AuthService.getToken();
       if (!token) throw new Error('Not authenticated');
 
-      const response = await fetch(`${API_URL}/auth/profile`, {
+      const response = await fetch(API_ENDPOINTS.AUTH.PROFILE, {
         method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`,
-        },
+        headers: getAuthHeaders(token),
         body: JSON.stringify(userData),
       });
 
@@ -186,12 +184,9 @@ export const AuthService = {
       const token = AuthService.getToken();
       if (!token) throw new Error('Not authenticated');
 
-      const response = await fetch(`${API_URL}/auth/change-password`, {
+      const response = await fetch(API_ENDPOINTS.AUTH.CHANGE_PASSWORD, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`,
-        },
+        headers: getAuthHeaders(token),
         body: JSON.stringify({ currentPassword, newPassword }),
       });
 

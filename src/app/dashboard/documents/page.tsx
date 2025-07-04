@@ -1,6 +1,7 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -11,113 +12,60 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { FileText, FilePlus, FileCheck, Clock, Calendar, Download, Eye, PlusCircle, Search, Filter, FileX, Upload, CheckCircle2, AlertCircle } from 'lucide-react';
+import DocumentService, { Document, DocumentFormData } from '@/services/document-service';
+import { toast } from 'sonner';
 
 export default function DocumentsPage() {
+  const router = useRouter();
   const [activeTab, setActiveTab] = useState('all');
   const [searchQuery, setSearchQuery] = useState('');
   const [isUploadDialogOpen, setIsUploadDialogOpen] = useState(false);
+  const [documents, setDocuments] = useState<Document[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [isUploading, setIsUploading] = useState(false);
+  const [formData, setFormData] = useState<Partial<DocumentFormData>>({
+    name: '',
+    type: '',
+    category: '',
+    tags: [],
+    description: '',
+    expiresAt: '',
+    relatedTo: {
+      entityType: 'Customer',
+      entityId: ''
+    }
+  });
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
   
-  // Mock data for documents
-  const documents = [
-    { 
-      id: 1, 
-      name: 'Customer Contract - John Doe', 
-      type: 'Contract', 
-      category: 'Customer',
-      status: 'Approved',
-      uploadedBy: 'Sarah Johnson',
-      uploadDate: '2023-07-10',
-      expiryDate: '2024-07-10',
-      size: '1.2 MB',
-      version: '1.0',
-      tags: ['contract', 'residential']
-    },
-    { 
-      id: 2, 
-      name: 'Installation Checklist - Project #1234', 
-      type: 'Checklist', 
-      category: 'Installation',
-      status: 'Pending Approval',
-      uploadedBy: 'Mike Williams',
-      uploadDate: '2023-07-12',
-      expiryDate: null,
-      size: '450 KB',
-      version: '1.0',
-      tags: ['installation', 'checklist']
-    },
-    { 
-      id: 3, 
-      name: 'Warranty Certificate - Solar Panels', 
-      type: 'Certificate', 
-      category: 'Product',
-      status: 'Approved',
-      uploadedBy: 'Emily Davis',
-      uploadDate: '2023-06-28',
-      expiryDate: '2033-06-28',
-      size: '890 KB',
-      version: '1.0',
-      tags: ['warranty', 'product']
-    },
-    { 
-      id: 4, 
-      name: 'Invoice #INV-2023-0568', 
-      type: 'Invoice', 
-      category: 'Finance',
-      status: 'Approved',
-      uploadedBy: 'Robert Chen',
-      uploadDate: '2023-07-05',
-      expiryDate: null,
-      size: '320 KB',
-      version: '1.0',
-      tags: ['invoice', 'payment']
-    },
-    { 
-      id: 5, 
-      name: 'Site Survey Report - 123 Main St', 
-      type: 'Report', 
-      category: 'Survey',
-      status: 'Rejected',
-      uploadedBy: 'James Wilson',
-      uploadDate: '2023-07-08',
-      expiryDate: null,
-      size: '4.5 MB',
-      version: '1.0',
-      tags: ['survey', 'site']
-    },
-    { 
-      id: 6, 
-      name: 'Employee Handbook 2023', 
-      type: 'Policy', 
-      category: 'HR',
-      status: 'Approved',
-      uploadedBy: 'Admin',
-      uploadDate: '2023-01-15',
-      expiryDate: '2023-12-31',
-      size: '2.8 MB',
-      version: '3.2',
-      tags: ['policy', 'hr']
-    },
-    { 
-      id: 7, 
-      name: 'Subsidy Application Form', 
-      type: 'Form', 
-      category: 'Subsidy',
-      status: 'Approved',
-      uploadedBy: 'Admin',
-      uploadDate: '2023-05-20',
-      expiryDate: null,
-      size: '550 KB',
-      version: '2.1',
-      tags: ['subsidy', 'form']
-    },
-  ];
+  // Fetch documents from API
+  useEffect(() => {
+    const fetchDocuments = async () => {
+      setLoading(true);
+      try {
+        const status = activeTab !== 'all' ? activeTab : undefined;
+        const filters = {
+          status: status as any,
+          searchTerm: searchQuery || undefined,
+        };
+        const docs = await DocumentService.getDocuments(filters);
+        setDocuments(docs);
+      } catch (error) {
+        console.error('Error fetching documents:', error);
+        toast.error('Failed to load documents');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchDocuments();
+  }, [activeTab, searchQuery]);
 
   // Filter documents based on active tab and search query
   const filteredDocuments = documents.filter(doc => {
     // Filter by tab
-    if (activeTab === 'approved' && doc.status !== 'Approved') return false;
-    if (activeTab === 'pending' && doc.status !== 'Pending Approval') return false;
-    if (activeTab === 'rejected' && doc.status !== 'Rejected') return false;
+    if (activeTab === 'approved' && doc.status !== 'approved') return false;
+    if (activeTab === 'pending' && doc.status !== 'pending') return false;
+    if (activeTab === 'rejected' && doc.status !== 'rejected') return false;
     
     // Filter by search query
     if (searchQuery) {
@@ -135,11 +83,11 @@ export default function DocumentsPage() {
 
   const getStatusBadge = (status: string) => {
     switch (status) {
-      case 'Approved':
+      case 'approved':
         return <Badge className="bg-green-100 text-green-800 border-green-200">Approved</Badge>;
-      case 'Pending Approval':
-        return <Badge className="bg-amber-100 text-amber-800 border-amber-200">Pending Approval</Badge>;
-      case 'Rejected':
+      case 'pending':
+        return <Badge className="bg-amber-100 text-amber-800 border-amber-200">Pending</Badge>;
+      case 'rejected':
         return <Badge className="bg-red-100 text-red-800 border-red-200">Rejected</Badge>;
       default:
         return <Badge>{status}</Badge>;
@@ -148,22 +96,160 @@ export default function DocumentsPage() {
 
   const getDocumentTypeIcon = (type: string) => {
     switch (type) {
-      case 'Contract':
+      case 'contract':
+      case 'customer_agreement':
         return <FileCheck className="h-4 w-4 text-blue-500" />;
-      case 'Checklist':
+      case 'checklist':
+      case 'installation_report':
         return <FileText className="h-4 w-4 text-amber-500" />;
-      case 'Certificate':
+      case 'certificate':
+      case 'warranty_certificate':
         return <FileCheck className="h-4 w-4 text-green-500" />;
-      case 'Invoice':
+      case 'invoice':
         return <FileText className="h-4 w-4 text-purple-500" />;
-      case 'Report':
+      case 'report':
+      case 'site_survey':
         return <FileText className="h-4 w-4 text-indigo-500" />;
-      case 'Policy':
+      case 'policy':
+      case 'government_approval':
         return <FileText className="h-4 w-4 text-gray-500" />;
-      case 'Form':
+      case 'form':
+      case 'subsidy_application':
         return <FileText className="h-4 w-4 text-teal-500" />;
       default:
         return <FileText className="h-4 w-4" />;
+    }
+  };
+
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+    const { id, value } = e.target;
+    
+    // Special handling for relatedTo.entityId
+    if (id === 'entityId') {
+      setFormData(prev => ({
+        ...prev,
+        relatedTo: {
+          ...prev.relatedTo,
+          entityId: value
+        }
+      }));
+      return;
+    }
+    
+    setFormData(prev => ({ ...prev, [id]: value }));
+  };
+
+  const handleSelectChange = (id: string, value: string) => {
+    // Special handling for relatedTo.entityType
+    if (id === 'entityType') {
+      setFormData(prev => ({
+        ...prev,
+        relatedTo: {
+          ...prev.relatedTo,
+          entityType: value
+        }
+      }));
+      return;
+    }
+    
+    setFormData(prev => ({ ...prev, [id]: value }));
+  };
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files[0]) {
+      setSelectedFile(e.target.files[0]);
+    }
+  };
+
+  const handleTagsChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const tagsString = e.target.value;
+    const tagsArray = tagsString.split(',').map(tag => tag.trim()).filter(Boolean);
+    setFormData(prev => ({ ...prev, tags: tagsArray }));
+  };
+
+  const handleUploadDocument = async () => {
+    if (!selectedFile) {
+      toast.error('Please select a file to upload');
+      return;
+    }
+
+    if (!formData.name || !formData.type || !formData.category) {
+      toast.error('Please fill all required fields');
+      return;
+    }
+    
+    // Make entityId optional now
+    // if (!formData.relatedTo.entityId) {
+    //   toast.error('Please enter an Entity ID');
+    //   return;
+    // }
+
+    try {
+      // Ensure relatedTo is properly set
+      const relatedTo = {
+        entityType: formData.relatedTo?.entityType || 'Customer',
+        entityId: formData.relatedTo?.entityId || ''
+      };
+      
+      console.log('Uploading document with relatedTo:', relatedTo);
+      console.log('File details:', {
+        name: selectedFile.name,
+        type: selectedFile.type,
+        size: selectedFile.size,
+      });
+      
+      const documentData: DocumentFormData = {
+        name: formData.name,
+        type: formData.type,
+        category: formData.category,
+        file: selectedFile,
+        tags: formData.tags,
+        expiresAt: formData.expiresAt,
+        relatedTo: relatedTo,
+        metadata: formData.description ? { description: formData.description } : undefined
+      };
+
+      setIsUploading(true);
+      await DocumentService.uploadDocument(documentData);
+      setIsUploading(false);
+      
+      toast.success('Document uploaded successfully');
+      
+      // Reset form and close dialog
+      setFormData({
+        name: '',
+        type: '',
+        category: '',
+        tags: [],
+        description: '',
+        expiresAt: '',
+        relatedTo: {
+          entityType: 'Customer',
+          entityId: ''
+        }
+      });
+      setSelectedFile(null);
+      setIsUploadDialogOpen(false);
+      
+      // Refresh documents list
+      const docs = await DocumentService.getDocuments();
+      setDocuments(docs);
+    } catch (error: any) {
+      setIsUploading(false);
+      console.error('Error uploading document:', error);
+      toast.error(error.message || 'Failed to upload document. Please try again.');
+    }
+  };
+
+  const handleDeleteDocument = async (id: string) => {
+    if (confirm('Are you sure you want to delete this document?')) {
+      try {
+        await DocumentService.deleteDocument(id);
+        // Remove document from state
+        setDocuments(prev => prev.filter(doc => doc.id !== id));
+      } catch (error) {
+        console.error('Error deleting document:', error);
+      }
     }
   };
 
@@ -188,33 +274,40 @@ export default function DocumentsPage() {
             <div className="grid gap-4 py-4">
               <div className="grid gap-2">
                 <Label htmlFor="file">Document File</Label>
-                <Input id="file" type="file" />
+                <Input id="file" type="file" onChange={handleFileChange} />
               </div>
               <div className="grid gap-2">
                 <Label htmlFor="name">Document Name</Label>
-                <Input id="name" placeholder="Enter document name" />
+                <Input 
+                  id="name" 
+                  placeholder="Enter document name" 
+                  value={formData.name} 
+                  onChange={handleInputChange} 
+                />
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div className="grid gap-2">
                   <Label htmlFor="type">Document Type</Label>
-                  <Select>
+                  <Select value={formData.type} onValueChange={(value) => handleSelectChange('type', value)}>
                     <SelectTrigger>
                       <SelectValue placeholder="Select type" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="contract">Contract</SelectItem>
-                      <SelectItem value="checklist">Checklist</SelectItem>
-                      <SelectItem value="certificate">Certificate</SelectItem>
+                      <SelectItem value="customer_agreement">Customer Agreement</SelectItem>
                       <SelectItem value="invoice">Invoice</SelectItem>
-                      <SelectItem value="report">Report</SelectItem>
-                      <SelectItem value="policy">Policy</SelectItem>
-                      <SelectItem value="form">Form</SelectItem>
+                      <SelectItem value="quotation">Quotation</SelectItem>
+                      <SelectItem value="subsidy_application">Subsidy Application</SelectItem>
+                      <SelectItem value="technical_specification">Technical Specification</SelectItem>
+                      <SelectItem value="site_survey">Site Survey</SelectItem>
+                      <SelectItem value="installation_report">Installation Report</SelectItem>
+                      <SelectItem value="warranty_certificate">Warranty Certificate</SelectItem>
+                      <SelectItem value="other">Other</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
                 <div className="grid gap-2">
                   <Label htmlFor="category">Category</Label>
-                  <Select>
+                  <Select value={formData.category} onValueChange={(value) => handleSelectChange('category', value)}>
                     <SelectTrigger>
                       <SelectValue placeholder="Select category" />
                     </SelectTrigger>
@@ -232,11 +325,21 @@ export default function DocumentsPage() {
               </div>
               <div className="grid gap-2">
                 <Label htmlFor="expiryDate">Expiry Date (if applicable)</Label>
-                <Input id="expiryDate" type="date" />
+                <Input 
+                  id="expiresAt" 
+                  type="date" 
+                  value={formData.expiresAt || ''} 
+                  onChange={handleInputChange} 
+                />
               </div>
               <div className="grid gap-2">
                 <Label htmlFor="tags">Tags (comma separated)</Label>
-                <Input id="tags" placeholder="contract, residential, etc." />
+                <Input 
+                  id="tags" 
+                  placeholder="contract, residential, etc." 
+                  value={formData.tags.join(', ')}
+                  onChange={handleTagsChange} 
+                />
               </div>
               <div className="grid gap-2">
                 <Label htmlFor="description">Description</Label>
@@ -244,12 +347,53 @@ export default function DocumentsPage() {
                   id="description" 
                   className="min-h-[100px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
                   placeholder="Enter document description"
+                  value={formData.description}
+                  onChange={handleInputChange}
                 ></textarea>
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div className="grid gap-2">
+                  <Label htmlFor="entityType">Related To (Type)</Label>
+                  <Select 
+                    value={formData.relatedTo.entityType} 
+                    onValueChange={(value) => handleSelectChange('entityType', value)}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select entity type" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="Customer">Customer</SelectItem>
+                      <SelectItem value="SalesLead">Sales Lead</SelectItem>
+                      <SelectItem value="Opportunity">Opportunity</SelectItem>
+                      <SelectItem value="ServiceTicket">Service Ticket</SelectItem>
+                      <SelectItem value="Project">Project</SelectItem>
+                      <SelectItem value="InventoryItem">Inventory Item</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="grid gap-2">
+                  <Label htmlFor="entityId">Entity ID</Label>
+                  <Input 
+                    id="entityId" 
+                    placeholder="Enter entity ID" 
+                    value={formData.relatedTo.entityId} 
+                    onChange={handleInputChange} 
+                  />
+                </div>
               </div>
             </div>
             <DialogFooter>
-              <Button variant="outline" onClick={() => setIsUploadDialogOpen(false)}>Cancel</Button>
-              <Button onClick={() => setIsUploadDialogOpen(false)}>Upload Document</Button>
+              <Button variant="outline" onClick={() => setIsUploadDialogOpen(false)} disabled={isUploading}>Cancel</Button>
+              <Button onClick={handleUploadDocument} disabled={isUploading}>
+                {isUploading ? (
+                  <>
+                    <span className="mr-2 h-4 w-4 animate-spin rounded-full border-2 border-background border-t-foreground"></span>
+                    Uploading...
+                  </>
+                ) : (
+                  'Upload Document'
+                )}
+              </Button>
             </DialogFooter>
           </DialogContent>
         </Dialog>
@@ -293,7 +437,11 @@ export default function DocumentsPage() {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          {filteredDocuments.length > 0 ? (
+          {loading ? (
+            <div className="text-center py-8 text-muted-foreground">
+              <p>Loading documents...</p>
+            </div>
+          ) : filteredDocuments.length > 0 ? (
             <Table>
               <TableHeader>
                 <TableRow>
@@ -312,7 +460,12 @@ export default function DocumentsPage() {
                     <TableCell>
                       <div className="flex items-center gap-2">
                         {getDocumentTypeIcon(doc.type)}
-                        <span className="font-medium">{doc.name}</span>
+                        <span 
+                          className="font-medium hover:text-blue-600 hover:underline cursor-pointer"
+                          onClick={() => router.push(`/dashboard/documents/${doc.id}`)}
+                        >
+                          {doc.name}
+                        </span>
                       </div>
                     </TableCell>
                     <TableCell>{doc.type}</TableCell>
@@ -320,15 +473,15 @@ export default function DocumentsPage() {
                     <TableCell>{getStatusBadge(doc.status)}</TableCell>
                     <TableCell>
                       <div className="text-sm">
-                        <div>{new Date(doc.uploadDate).toLocaleDateString()}</div>
+                        <div>{new Date(doc.uploadedAt).toLocaleDateString()}</div>
                         <div className="text-xs text-muted-foreground">by {doc.uploadedBy}</div>
                       </div>
                     </TableCell>
                     <TableCell>
-                      {doc.expiryDate ? (
+                      {doc.expiresAt ? (
                         <div className="text-sm">
-                          {new Date(doc.expiryDate).toLocaleDateString()}
-                          {new Date(doc.expiryDate) < new Date() && (
+                          {new Date(doc.expiresAt).toLocaleDateString()}
+                          {new Date(doc.expiresAt) < new Date() && (
                             <div className="text-xs text-red-500 flex items-center gap-1">
                               <AlertCircle className="h-3 w-3" />
                               Expired
@@ -346,6 +499,13 @@ export default function DocumentsPage() {
                         </Button>
                         <Button variant="ghost" size="icon">
                           <Download className="h-4 w-4" />
+                        </Button>
+                        <Button 
+                          variant="ghost" 
+                          size="icon" 
+                          onClick={() => handleDeleteDocument(doc.id)}
+                        >
+                          <FileX className="h-4 w-4 text-red-500" />
                         </Button>
                       </div>
                     </TableCell>
@@ -370,6 +530,7 @@ export default function DocumentsPage() {
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
+              {/* This would be fetched from an activity log API */}
               <div className="flex items-start gap-2">
                 <div className="bg-green-100 p-1 rounded-full">
                   <Upload className="h-3 w-3 text-green-600" />
@@ -422,19 +583,27 @@ export default function DocumentsPage() {
               </div>
               <div className="flex justify-between items-center">
                 <span className="text-sm">Approved</span>
-                <span className="font-medium">{documents.filter(d => d.status === 'Approved').length}</span>
+                <span className="font-medium">{documents.filter(d => d.status === 'approved').length}</span>
               </div>
               <div className="flex justify-between items-center">
-                <span className="text-sm">Pending Approval</span>
-                <span className="font-medium">{documents.filter(d => d.status === 'Pending Approval').length}</span>
+                <span className="text-sm">Pending</span>
+                <span className="font-medium">{documents.filter(d => d.status === 'pending').length}</span>
               </div>
               <div className="flex justify-between items-center">
                 <span className="text-sm">Rejected</span>
-                <span className="font-medium">{documents.filter(d => d.status === 'Rejected').length}</span>
+                <span className="font-medium">{documents.filter(d => d.status === 'rejected').length}</span>
               </div>
               <div className="flex justify-between items-center">
                 <span className="text-sm">Expiring Soon (30 days)</span>
-                <span className="font-medium">2</span>
+                <span className="font-medium">
+                  {documents.filter(d => {
+                    if (!d.expiresAt) return false;
+                    const expiryDate = new Date(d.expiresAt);
+                    const thirtyDaysFromNow = new Date();
+                    thirtyDaysFromNow.setDate(thirtyDaysFromNow.getDate() + 30);
+                    return expiryDate <= thirtyDaysFromNow && expiryDate >= new Date();
+                  }).length}
+                </span>
               </div>
             </div>
           </CardContent>

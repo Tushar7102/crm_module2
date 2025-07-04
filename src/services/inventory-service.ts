@@ -113,8 +113,6 @@ export interface PickListItem {
   picked: number;
   status: 'pending' | 'partial' | 'complete';
 }
-
-export interface InventoryTransaction {
   type: 'restock' | 'sale' | 'adjustment' | 'return';
   quantity: number;
   previousQuantity: number;
