@@ -1,0 +1,7 @@
+{
+  "version": 3,
+  "sources": [],
+  "sections": [
+    {"offset": {"line": 6, "column": 0}, "map": {"version":3,"sources":[],"names":[],"mappings":"","debugId":null}},
+    {"offset": {"line": 42, "column": 0}, "map": {"version":3,"sources":["file:///C:/Users/Tushar/Downloads/crm_module2/src/app/page.tsx"],"sourcesContent":["import { redirect } from 'next/navigation';\n\nexport default function Home() {\n  // Redirect to the login page\n  redirect('/auth/login');\n  \n  // This won't be rendered due to the redirect\n  return null;\n}\n"],"names":[],"mappings":";;;AAAA;AAAA;;AAEe,SAAS;IACtB,6BAA6B;IAC7B,CAAA,GAAA,qLAAA,CAAA,WAAQ,AAAD,EAAE;IAET,6CAA6C;IAC7C,OAAO;AACT","debugId":null}}]
+}

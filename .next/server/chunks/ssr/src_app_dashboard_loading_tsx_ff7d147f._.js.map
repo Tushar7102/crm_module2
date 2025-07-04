@@ -1,0 +1,6 @@
+{
+  "version": 3,
+  "sources": [],
+  "sections": [
+    {"offset": {"line": 7, "column": 0}, "map": {"version":3,"sources":["file:///C:/Users/Tushar/Downloads/crm_module2/src/app/dashboard/loading.tsx"],"sourcesContent":["import { Loader2 } from 'lucide-react';\n\nexport default function DashboardLoading() {\n  return (\n    <div className=\"flex items-center justify-center h-full min-h-[50vh]\">\n      <div className=\"flex flex-col items-center gap-2\">\n        <Loader2 className=\"h-8 w-8 animate-spin text-primary\" />\n        <p className=\"text-sm text-muted-foreground\">Loading dashboard...</p>\n      </div>\n    </div>\n  );\n}"],"names":[],"mappings":";;;;AAAA;;;AAEe,SAAS;IACtB,qBACE,8OAAC;QAAI,WAAU;kBACb,cAAA,8OAAC;YAAI,WAAU;;8BACb,8OAAC,iNAAA,CAAA,UAAO;oBAAC,WAAU;;;;;;8BACnB,8OAAC;oBAAE,WAAU;8BAAgC;;;;;;;;;;;;;;;;;AAIrD","debugId":null}}]
+}

@@ -1,6 +1,5 @@
 import { toast } from 'sonner';
 import AuthService from './auth-service';
-import { API_URL, API_ENDPOINTS, getAuthHeaders } from '@/lib/api-config';
 
 // Types for leads
 export interface Lead {
@@ -55,7 +54,7 @@ export interface LeadsResponse {
   };
 }
 
-// API URL is now imported from api-config.ts
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api';
 
 /**
  * Service for handling lead-related API calls
@@ -87,11 +86,14 @@ export const LeadService = {
       }
   
       // Always use the real backend API
-      const apiUrl = `${API_ENDPOINTS.LEADS.BASE}${queryString}`;
+      const apiUrl = `${API_URL}/leads${queryString}`;
   
       const response = await fetch(apiUrl, {
         method: 'GET',
-        headers: getAuthHeaders(token),
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        },
       });
   
       if (!response.ok) {
@@ -126,9 +128,12 @@ export const LeadService = {
       const token = AuthService.getToken();
       if (!token) throw new Error('Not authenticated');
 
-      const response = await fetch(API_ENDPOINTS.LEADS.DETAIL(id), {
+      const response = await fetch(`${API_URL}/leads/${id}`, {
         method: 'GET',
-        headers: getAuthHeaders(token),
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        },
       });
 
       if (!response.ok) {
