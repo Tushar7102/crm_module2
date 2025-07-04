@@ -1,7 +1,5 @@
 import { NextResponse } from 'next/server';
-import { Opportunity } from '@/types';
 import { OpportunityService } from '@/services/opportunity-service';
-import { cookies } from 'next/headers';
 
 export async function GET(
   request: Request,

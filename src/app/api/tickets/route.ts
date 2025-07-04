@@ -143,7 +143,7 @@ export async function POST(request: Request) {
     };
     
     return NextResponse.json(newTicket, { status: 201 });
-  } catch (error) {
+  } catch (_error) {
     return NextResponse.json(
       { error: 'Failed to create service ticket' },
       { status: 400 }

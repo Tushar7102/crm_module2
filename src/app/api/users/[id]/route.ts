@@ -93,7 +93,7 @@ export async function PUT(
     };
 
     return NextResponse.json(updatedUser);
-  } catch (error) {
+  } catch (_error) {
     return NextResponse.json(
       { error: 'Failed to update user' },
       { status: 400 }

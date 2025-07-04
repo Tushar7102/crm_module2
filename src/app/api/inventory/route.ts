@@ -67,8 +67,7 @@ export async function POST(request: Request) {
     };
     
     return NextResponse.json(newItem, { status: 201 });
-  } catch (error) {
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  } catch (_error) {
     return NextResponse.json(
       { error: 'Failed to create inventory item' },
       { status: 400 }
